@@ -1,3 +1,5 @@
+/* eslint-disable react-refresh/only-export-components */
+
 import {
   createContext,
   useContext,
@@ -6,88 +8,190 @@ import {
   type ReactNode,
 } from "react";
 
-import type { AuthContextType, User } from "../types";
-import { mockUsers } from "../data/mockData";
+import api from "../services/api";
+import type { User } from "../types";
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+interface AuthContextValue {
+  user: User | null;
+  loading: boolean;
 
-interface StoredAccount {
-  user: User;
-  password: string;
+  login: (
+    email: string,
+    password: string
+  ) => Promise<void>;
+
+  register: (
+    name: string,
+    email: string,
+    password: string,
+    role: "user" | "employee"
+  ) => Promise<void>;
+
+  logout: () => void;
 }
 
-const storedAccounts: StoredAccount[] = [
-  {
-    user: mockUsers[0],
-    password: "employee123",
-  },
-];
+const AuthContext =
+  createContext<AuthContextValue | undefined>(
+    undefined
+  );
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => {
-    const storedUser = localStorage.getItem("company_user");
+export function AuthProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const [user, setUser] =
+    useState<User | null>(null);
 
-    if (!storedUser) {
-      return null;
-    }
-
-    try {
-      return JSON.parse(storedUser) as User;
-    } catch {
-      localStorage.removeItem("company_user");
-      return null;
-    }
-  });
+  const [loading, setLoading] =
+    useState(() => localStorage.getItem(
+        "employeeToken"
+      ) !== null
+    );
 
   useEffect(() => {
-    if (user) {
-      localStorage.setItem("company_user", JSON.stringify(user));
-    } else {
-      localStorage.removeItem("company_user");
-    }
-  }, [user]);
+    const token =
+      localStorage.getItem("employeeToken");
 
-  const login = (email: string, password: string): boolean => {
-    const account = storedAccounts.find(
-      (item) =>
-        item.user.email.toLowerCase() === email.toLowerCase() &&
-        item.password === password,
-    );
-
-    if (!account) {
-      return false;
+    if (!token) {
+      setTimeout(() => setLoading(false), 0);
+      return;
     }
 
-    setUser(account.user);
-    return true;
-  };
+    const checkUser = async () => {
+      try {
+        const response =
+          await api.get("/auth/me");
 
-  const register = (name: string, email: string, _password: string): boolean => {
-    const alreadyExists = storedAccounts.some(
-      (item) => item.user.email.toLowerCase() === email.toLowerCase(),
-    );
+        const currentUser =
+          (response.data.data ?? response.data.user ?? response.data) as User;
 
-    if (alreadyExists) {
-      return false;
-    }
+        if (
+          currentUser.role !== "employee" &&
+          currentUser.role !== "user"
+        ) {
+          throw new Error(
+            "Admin accounts must use the separate admin portal."
+          );
+        }
 
-    const newUser: User = {
-      id: `EMP${Date.now()}`,
-      name,
-      email,
-      phone: "",
-      department: "Technology",
-      designation: "Employee",
-      role: "employee",
-      joinDate: new Date().toISOString().split("T")[0],
-      location: "Kerala",
+        setUser(currentUser);
+
+        localStorage.setItem(
+          "company_portal_user",
+          JSON.stringify(currentUser)
+        );
+      } catch {
+        localStorage.removeItem(
+          "employeeToken"
+        );
+
+        localStorage.removeItem(
+          "company_portal_user"
+        );
+
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    setUser(newUser);
-    return true;
+    checkUser();
+  }, []);
+
+  const login = async (
+    email: string,
+    password: string
+  ): Promise<void> => {
+    const response =
+      await api.post("/auth/login", {
+        email,
+        password,
+      });
+
+    const {
+      token,
+      user: loggedUser,
+    } = (response.data.data ?? response.data) as {
+      token: string;
+      user: User;
+    };
+
+    if (
+      loggedUser.role !== "employee" &&
+      loggedUser.role !== "user"
+    ) {
+      throw new Error(
+        "Admin accounts must use the separate admin portal."
+      );
+    }
+
+    localStorage.setItem(
+      "employeeToken",
+      token
+    );
+
+    localStorage.setItem(
+      "company_portal_user",
+      JSON.stringify(loggedUser)
+    );
+
+    setUser(loggedUser);
   };
 
-  const logout = () => {
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    role: "user" | "employee"
+  ): Promise<void> => {
+    const response =
+      await api.post("/auth/register", {
+        name,
+        email,
+        password,
+        role,
+      });
+
+    const {
+      token,
+      user: registeredUser,
+    } = (response.data.data ?? response.data) as {
+      token: string;
+      user: User;
+    };
+
+    if (
+      registeredUser.role !== "employee" &&
+      registeredUser.role !== "user"
+    ) {
+      throw new Error(
+        "Invalid account role."
+      );
+    }
+
+    localStorage.setItem(
+      "employeeToken",
+      token
+    );
+
+    localStorage.setItem(
+      "company_portal_user",
+      JSON.stringify(registeredUser)
+    );
+
+    setUser(registeredUser);
+  };
+
+  const logout = (): void => {
+    localStorage.removeItem(
+      "employeeToken"
+    );
+
+    localStorage.removeItem(
+      "company_portal_user"
+    );
+
     setUser(null);
   };
 
@@ -95,7 +199,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: user !== null,
+        loading,
         login,
         register,
         logout,
@@ -106,11 +210,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useAuth(): AuthContextType {
-  const context = useContext(AuthContext);
+export function useAuth(): AuthContextValue {
+  const context =
+    useContext(AuthContext);
 
-  if (!context) {
-    throw new Error("useAuth must be used inside AuthProvider");
+  if (context === undefined) {
+    throw new Error(
+      "useAuth must be used inside AuthProvider"
+    );
   }
 
   return context;

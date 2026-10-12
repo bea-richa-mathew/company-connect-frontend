@@ -1,57 +1,145 @@
-import { mockAttendance } from "../../data/mockData";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient
+} from "@tanstack/react-query";
+
+import api from "../../services/api";
+import type {
+  Attendance as AttendanceType
+} from "../../types";
+
+import StatCard from "../../components/StatCard";
 
 export default function Attendance() {
+  const queryClient =
+    useQueryClient();
+
+  const {
+    data: attendance = []
+  } = useQuery<AttendanceType[]>({
+    queryKey: ["attendance"],
+
+    queryFn: async () => {
+      const response =
+        await api.get("/attendance");
+
+      return response.data.data || [];
+    }
+  });
+
+  const checkIn =
+    useMutation({
+      mutationFn: () =>
+        api.post(
+          "/attendance/check-in"
+        ),
+
+      onSuccess: () =>
+        queryClient.invalidateQueries({
+          queryKey: ["attendance"]
+        })
+    });
+
+  const checkOut =
+    useMutation({
+      mutationFn: () =>
+        api.post(
+          "/attendance/check-out"
+        ),
+
+      onSuccess: () =>
+        queryClient.invalidateQueries({
+          queryKey: ["attendance"]
+        })
+    });
+
+  const today =
+    attendance.find(
+      (item) =>
+        item.date ===
+        new Date()
+          .toISOString()
+          .slice(0, 10)
+    );
+
   return (
     <div>
-      <p className="text-sm text-slate-500">Employee Portal</p>
-      <h1 className="mt-2 text-3xl font-bold">Attendance</h1>
+      <div className="mb-7">
+        <p className="mb-3 text-xs font-extrabold tracking-[.13em] text-[#3155d9]">
+          ATTENDANCE
+        </p>
 
-      <div className="mt-8 grid gap-5 sm:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-sm text-slate-500">Present</p>
-          <p className="mt-2 text-3xl font-bold">18</p>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-sm text-slate-500">Late</p>
-          <p className="mt-2 text-3xl font-bold">2</p>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-sm text-slate-500">Leave</p>
-          <p className="mt-2 text-3xl font-bold">1</p>
-        </div>
+        <h1 className="m-0 text-3xl font-extrabold">
+          Attendance overview
+        </h1>
       </div>
 
-      <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[700px] text-left text-sm">
-            <thead className="bg-slate-50 text-slate-500">
-              <tr>
-                <th className="px-6 py-4 font-semibold">Date</th>
-                <th className="px-6 py-4 font-semibold">Check In</th>
-                <th className="px-6 py-4 font-semibold">Check Out</th>
-                <th className="px-6 py-4 font-semibold">Status</th>
-              </tr>
-            </thead>
+      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+        <StatCard
+          label="Recorded Days"
+          value={attendance.length}
+          icon="✓"
+        />
 
-            <tbody className="divide-y divide-slate-100">
-              {mockAttendance.map((record) => (
-                <tr key={record.id}>
-                  <td className="px-6 py-4">{record.date}</td>
-                  <td className="px-6 py-4">{record.checkIn}</td>
-                  <td className="px-6 py-4">{record.checkOut}</td>
-                  <td className="px-6 py-4">
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">
-                      {record.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <StatCard
+          label="Today"
+          value={
+            today?.status ||
+            "Not marked"
+          }
+          icon="◷"
+        />
+
+        <StatCard
+          label="Work Hours"
+          value="—"
+          icon="⌚"
+        />
       </div>
+
+      <section className="rounded-[14px] border border-[#e2e7f0] bg-white p-6 shadow-sm">
+        <h2>Today</h2>
+
+        <p className="text-[#6d7890]">
+          {today?.checkIn
+            ? `Checked in at ${new Date(
+                today.checkIn
+              ).toLocaleTimeString()}`
+            : "You have not checked in yet."}
+        </p>
+
+        {today?.checkIn &&
+        !today.checkOut ? (
+          <button
+            className="rounded-lg bg-[#3155d9] px-5 py-3 font-semibold text-white"
+            onClick={() =>
+              checkOut.mutate()
+            }
+            disabled={
+              checkOut.isPending
+            }
+          >
+            Check Out
+          </button>
+        ) : !today?.checkIn ? (
+          <button
+            className="rounded-lg bg-[#3155d9] px-5 py-3 font-semibold text-white"
+            onClick={() =>
+              checkIn.mutate()
+            }
+            disabled={
+              checkIn.isPending
+            }
+          >
+            Check In
+          </button>
+        ) : (
+          <span className="rounded-full bg-[#e4f7ec] px-3 py-1 text-sm font-semibold text-[#167044]">
+            Completed
+          </span>
+        )}
+      </section>
     </div>
   );
 }

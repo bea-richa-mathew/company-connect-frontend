@@ -1,106 +1,176 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import Button from "../../components/Button";
+import {
+  useState,
+  type FormEvent
+} from "react";
+
+import {
+  useNavigate
+} from "react-router-dom";
+
+import {
+  useAuth
+} from "../../context/AuthContext";
 
 export default function Register() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
+  const {
+    register,
+    user
+  } = useAuth();
 
-  const { register } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const [
+    form,
+    setForm
+  ] = useState({
+    name: "",
+    email: "",
+    password: ""
+  });
+
+  const [
+    role,
+    setRole
+  ] = useState<"user" | "employee">("user");
+
+  const [
+    error,
+    setError
+  ] = useState("");
+
+  const submit = async (
+    event: FormEvent
+  ) => {
     event.preventDefault();
+    setError("");
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
+    try {
+      await register(
+        form.name,
+        form.email,
+        form.password,
+        role
+      );
+
+      // Use the role saved by the backend.
+      const registeredRole = user?.role;
+
+      navigate(
+        registeredRole === "employee"
+          ? "/employee"
+          : "/",
+        {
+          replace: true
+        }
+      );
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Registration failed."
+      );
     }
-
-    const success = register(name, email, password);
-
-    if (!success) {
-      setError("An account with this email already exists.");
-      return;
-    }
-
-    navigate("/employee");
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-73px)] items-center justify-center px-6 py-16">
-      <div className="w-full max-w-md">
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-          <h1 className="text-3xl font-bold">Create an account</h1>
+    <section className="grid min-h-[70vh] place-items-center px-5 py-12">
+      <form
+        className="grid w-full max-w-md gap-4 rounded-2xl border border-[#e2e7f0] bg-white p-7 shadow-sm"
+        onSubmit={submit}
+      >
+        <p className="mb-0 text-xs font-extrabold tracking-[.13em] text-[#3155d9]">
+          JOIN OUR COMPANY
+        </p>
 
-          <p className="mt-3 text-sm text-slate-500">
-            Register for the employee portal.
+        <h1 className="m-0 text-3xl font-extrabold">
+          Create account
+        </h1>
+
+        <label>
+          Full Name
+
+          <input
+            className="mt-1 w-full rounded-lg border border-[#d7deea] px-3 py-3"
+            required
+            value={form.name}
+            onChange={(event) =>
+              setForm({
+                ...form,
+                name: event.target.value
+              })
+            }
+          />
+        </label>
+
+        <label>
+          Email
+
+          <input
+            className="mt-1 w-full rounded-lg border border-[#d7deea] px-3 py-3"
+            type="email"
+            required
+            value={form.email}
+            onChange={(event) =>
+              setForm({
+                ...form,
+                email: event.target.value
+              })
+            }
+          />
+        </label>
+
+        <label>
+          Password
+
+          <input
+            className="mt-1 w-full rounded-lg border border-[#d7deea] px-3 py-3"
+            type="password"
+            minLength={6}
+            required
+            value={form.password}
+            onChange={(event) =>
+              setForm({
+                ...form,
+                password: event.target.value
+              })
+            }
+          />
+        </label>
+
+        <label className="block">
+          <span className="mb-2 block">
+            Register as
+          </span>
+
+          <select
+            value={role}
+            onChange={(event) =>
+              setRole(
+                event.target.value as "user" | "employee"
+              )
+            }
+            className="w-full rounded-lg border p-3"
+          >
+            <option value="user">
+              User
+            </option>
+
+            <option value="employee">
+              Employee
+            </option>
+          </select>
+        </label>
+
+        {error && (
+          <p className="rounded-lg bg-[#fff0f0] p-3 text-[#c62828]">
+            {error}
           </p>
+        )}
 
-          {error && (
-            <div className="mt-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-            <input
-              required
-              placeholder="Full name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-900"
-            />
-
-            <input
-              required
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-900"
-            />
-
-            <input
-              required
-              type="password"
-              placeholder="Password"
-              minLength={6}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-900"
-            />
-
-            <input
-              required
-              type="password"
-              placeholder="Confirm password"
-              minLength={6}
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-900"
-            />
-
-            <Button type="submit" className="w-full">
-              Create Account
-            </Button>
-          </form>
-
-          <p className="mt-6 text-center text-sm text-slate-500">
-            Already have an account?{" "}
-            <Link
-              to="/login"
-              className="font-semibold text-slate-900 hover:underline"
-            >
-              Sign in
-            </Link>
-          </p>
-        </div>
-      </div>
-    </div>
+        <button className="rounded-lg bg-[#3155d9] px-5 py-3 font-semibold text-white">
+          Register
+        </button>
+      </form>
+    </section>
   );
 }

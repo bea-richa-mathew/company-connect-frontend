@@ -2,24 +2,21 @@ import { Link } from "react-router-dom";
 
 export default function NotFound() {
   return (
-    <section className="not-found">
+    <section className="grid min-h-[70vh] place-items-center px-5 text-center">
       <div>
-        <span className="not-found-number">
+        <h1 className="text-6xl font-extrabold text-[#172033]">
           404
-        </span>
+        </h1>
 
-        <h1>Page not found</h1>
-
-        <p>
-          The page you are looking for doesn't exist
-          or has been moved.
-        </p>
+        <h2>
+          Page not found
+        </h2>
 
         <Link
+          className="text-[#3155d9]"
           to="/"
-          className="button primary"
         >
-          Back to Home
+          Return to Home
         </Link>
       </div>
     </section>

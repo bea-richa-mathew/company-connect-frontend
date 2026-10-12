@@ -1,91 +1,129 @@
-import { useMemo, useState } from "react";
-import JobCard from "../../components/JobCard";
-import { mockJobs } from "../../data/mockData";
+import {
+  useQuery
+} from "@tanstack/react-query";
+
+import {
+  Link
+} from "react-router-dom";
+
+import {
+  useState
+} from "react";
+
+import api from "../../services/api";
+import type { Job } from "../../types";
 
 export default function Careers() {
-  const [search, setSearch] = useState("");
-  const [department, setDepartment] = useState("All");
+  const [
+    search,
+    setSearch
+  ] = useState("");
 
-  const departments = [
-    "All",
-    ...Array.from(new Set(mockJobs.map((job) => job.department))),
-  ];
+  const {
+    data = [],
+    isLoading,
+    error
+  } = useQuery<Job[]>({
+    queryKey: ["jobs"],
 
-  const filteredJobs = useMemo(() => {
-    return mockJobs.filter((job) => {
-      const matchesSearch =
-        job.title.toLowerCase().includes(search.toLowerCase()) ||
-        job.description.toLowerCase().includes(search.toLowerCase());
+    queryFn: async () => {
+      const response =
+        await api.get("/jobs");
 
-      const matchesDepartment =
-        department === "All" || job.department === department;
+      return response.data.data || [];
+    }
+  });
 
-      return matchesSearch && matchesDepartment;
-    });
-  }, [search, department]);
+  const filtered =
+    data.filter((job) =>
+      `${job.title} ${job.department} ${job.location}`
+        .toLowerCase()
+        .includes(search.toLowerCase())
+    );
 
   return (
-    <div>
-      <section className="bg-slate-950 px-6 py-20 text-white">
-        <div className="mx-auto max-w-7xl">
-          <p className="text-sm font-bold uppercase tracking-widest text-slate-400">
-            Careers
-          </p>
+    <section className="mx-auto max-w-7xl px-8 py-20">
+      <div className="mb-8">
+        <p className="mb-3 text-xs font-extrabold tracking-[.13em] text-[#3155d9]">
+          CAREERS
+        </p>
 
-          <h1 className="mt-4 max-w-3xl text-5xl font-bold">
-            Build your career with us.
-          </h1>
+        <h1 className="text-4xl font-extrabold">
+          Find your next opportunity
+        </h1>
 
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-            Join a team where you can learn, contribute and work on meaningful
-            technology.
-          </p>
-        </div>
-      </section>
+        <p className="text-[#6d7890]">
+          Join a team where you can learn,
+          contribute, and grow.
+        </p>
+      </div>
 
-      <section className="mx-auto max-w-7xl px-6 py-16">
-        <div className="grid gap-4 md:grid-cols-[1fr_240px]">
-          <input
-            type="text"
-            placeholder="Search jobs..."
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            className="rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-slate-900"
-          />
+      <input
+        className="mb-6 w-full max-w-xl rounded-lg border border-[#d7deea] bg-white px-3 py-3 outline-none focus:border-[#3155d9]"
+        placeholder="Search by title, department, or location..."
+        value={search}
+        onChange={(event) =>
+          setSearch(event.target.value)
+        }
+      />
 
-          <select
-            value={department}
-            onChange={(event) => setDepartment(event.target.value)}
-            className="rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none"
-          >
-            {departments.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
-        </div>
+      {isLoading && (
+        <p>Loading jobs...</p>
+      )}
 
-        <div className="mt-10">
-          <p className="text-sm text-slate-500">
-            {filteredJobs.length} position
-            {filteredJobs.length !== 1 ? "s" : ""} available
-          </p>
+      {error && (
+        <p className="rounded-lg bg-[#fff0f0] p-3 text-[#c62828]">
+          Unable to load jobs.
+        </p>
+      )}
 
-          <div className="mt-5 grid gap-6 md:grid-cols-2">
-            {filteredJobs.map((job) => (
-              <JobCard key={job.id} job={job} />
-            ))}
-          </div>
+      {!isLoading && !error && (
+        <div className="grid gap-4">
+          {filtered.map((job) => {
+            const id =
+              job._id || job.id;
 
-          {filteredJobs.length === 0 && (
-            <div className="mt-10 rounded-2xl border border-dashed border-slate-300 p-12 text-center">
-              <h3 className="font-bold">No jobs found</h3>
-              <p className="mt-2 text-sm text-slate-500">
-                Try a different search or department.
-              </p>
+            return (
+              <article
+                className="flex flex-col justify-between gap-5 rounded-[14px] border border-[#e2e7f0] bg-white p-6 md:flex-row md:items-center"
+                key={id}
+              >
+                <div>
+                  <h3>{job.title}</h3>
+
+                  <p className="text-[#6d7890]">
+                    {job.department} ·{" "}
+                    {job.location}
+                  </p>
+
+                  <div className="flex flex-wrap gap-2">
+                    <span className="rounded-full bg-[#eef2ff] px-3 py-1 text-xs font-semibold text-[#3155d9]">
+                      {job.type}
+                    </span>
+
+                    <span className="rounded-full bg-[#eef2ff] px-3 py-1 text-xs font-semibold text-[#3155d9]">
+                      {job.experience}
+                    </span>
+                  </div>
+                </div>
+
+                <Link
+                  className="rounded-lg bg-[#3155d9] px-4 py-2 text-center text-sm font-semibold text-white"
+                  to={`/careers/${id}`}
+                >
+                  View Details
+                </Link>
+              </article>
+            );
+          })}
+
+          {!filtered.length && (
+            <div className="rounded-xl border border-dashed border-[#e2e7f0] bg-white p-9 text-center text-[#6d7890]">
+              No jobs found.
             </div>
           )}
         </div>
-      </section>
-    </div>
+      )}
+    </section>
   );
 }

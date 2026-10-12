@@ -1,104 +1,149 @@
-import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  useState,
+  type FormEvent
+} from "react";
+
+import {
+  Link,
+  useLocation,
+  useNavigate
+} from "react-router-dom";
+
 import { useAuth } from "../../context/AuthContext";
-import Button from "../../components/Button";
 
 export default function Login() {
-  const [email, setEmail] = useState("employee@company.com");
-  const [password, setPassword] = useState("employee123");
-  const [error, setError] = useState("");
+  const {
+    login
+  } = useAuth();
 
-  const { login } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate =
+    useNavigate();
 
-  const redirect =
-    new URLSearchParams(location.search).get("redirect") || "/employee";
+  const location =
+    useLocation();
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const [
+    email,
+    setEmail
+  ] = useState("");
+
+  const [
+    password,
+    setPassword
+  ] = useState("");
+
+  const [
+    error,
+    setError
+  ] = useState("");
+
+  const submit = async (
+    event: FormEvent
+  ) => {
     event.preventDefault();
+    setError("");
 
-    const success = login(email, password);
+    try {
+      await login(
+        email,
+        password
+      );
 
-    if (!success) {
-      setError("Invalid email or password.");
-      return;
+      const state =
+        location.state as
+          | { from?: string }
+          | null;
+
+      navigate(
+        state?.from ||
+          "/employee",
+        {
+          replace: true
+        }
+      );
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Login failed."
+      );
     }
-
-    navigate(redirect);
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-73px)] items-center justify-center px-6 py-16">
-      <div className="w-full max-w-md">
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-          <div className="text-center">
-            <p className="text-sm font-semibold uppercase tracking-widest text-slate-500">
-              Employee Portal
-            </p>
+    <section className="grid min-h-[70vh] place-items-center px-5 py-12">
+      <form
+        className="grid w-full max-w-md gap-4 rounded-2xl border border-[#e2e7f0] bg-white p-7 shadow-sm"
+        onSubmit={submit}
+      >
+        <p className="mb-0 text-xs font-extrabold tracking-[.13em] text-[#3155d9]">
+          WELCOME BACK
+        </p>
 
-            <h1 className="mt-3 text-3xl font-bold">Welcome back</h1>
+        <h1 className="m-0 text-3xl font-extrabold">
+          Sign in
+        </h1>
 
-            <p className="mt-3 text-sm text-slate-500">
-              Sign in to access your employee account.
-            </p>
-          </div>
+        <p className="text-[#6d7890]">
+          Sign in to your employee portal
+          account.
+        </p>
 
-          {error && (
-            <div className="mt-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">
-              {error}
-            </div>
-          )}
+        <label>
+          Email
 
-          <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-            <div>
-              <label className="mb-2 block text-sm font-semibold">
-                Email
-              </label>
+          <input
+            className="mt-1 w-full rounded-lg border border-[#d7deea] px-3 py-3"
+            type="email"
+            required
+            value={email}
+            onChange={(event) =>
+              setEmail(event.target.value)
+            }
+          />
+        </label>
 
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-900"
-              />
-            </div>
+        <label>
+          Password
 
-            <div>
-              <label className="mb-2 block text-sm font-semibold">
-                Password
-              </label>
+          <input
+            className="mt-1 w-full rounded-lg border border-[#d7deea] px-3 py-3"
+            type="password"
+            required
+            value={password}
+            onChange={(event) =>
+              setPassword(
+                event.target.value
+              )
+            }
+          />
+        </label>
 
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-900"
-              />
-            </div>
-
-            <Button type="submit" className="w-full">
-              Sign In
-            </Button>
-          </form>
-
-          <p className="mt-6 text-center text-sm text-slate-500">
-            Don't have an account?{" "}
-            <Link
-              to="/register"
-              className="font-semibold text-slate-900 hover:underline"
-            >
-              Register
-            </Link>
+        {error && (
+          <p className="rounded-lg bg-[#fff0f0] p-3 text-[#c62828]">
+            {error}
           </p>
+        )}
 
-          <div className="mt-6 rounded-xl bg-slate-50 p-4 text-xs text-slate-500">
-            Demo login: employee@company.com / employee123
-          </div>
-        </div>
-      </div>
-    </div>
+        <button className="rounded-lg bg-[#3155d9] px-5 py-3 font-semibold text-white">
+          Login
+        </button>
+
+        <p className="rounded-lg bg-[#f3f5fa] p-3 text-sm text-[#6d7890]">
+          Admin accounts use the separate
+          Admin Portal.
+        </p>
+
+        <p>
+          New user?{" "}
+          <Link
+            className="text-[#3155d9]"
+            to="/register"
+          >
+            Create an account
+          </Link>
+        </p>
+      </form>
+    </section>
   );
 }

@@ -1,84 +1,208 @@
-import { useState } from "react";
-import Button from "../../components/Button";
-import { mockLeaveRequests } from "../../data/mockData";
+import {
+  useState,
+  type FormEvent
+} from "react";
+
+import {
+  useMutation,
+  useQuery,
+  useQueryClient
+} from "@tanstack/react-query";
+
+import api from "../../services/api";
+import type {
+  LeaveRequest
+} from "../../types";
 
 export default function Leave() {
-  const [showForm, setShowForm] = useState(false);
+  const queryClient = useQueryClient();
+
+  // Updated state property names to match backend expectations
+  const [form, setForm] = useState({
+    leaveType: "Casual",
+    startDate: "",
+    endDate: "",
+    reason: ""
+  });
+
+  const { data: requests = [] } = useQuery<LeaveRequest[]>({
+    queryKey: ["my-leaves"],
+    queryFn: async () => {
+      const response = await api.get("/leaves");
+      return response.data.data || [];
+    }
+  });
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      api.post("/leaves", {
+        leaveType: form.leaveType,
+        startDate: form.startDate,
+        endDate: form.endDate,
+        reason: form.reason
+      }),
+
+    onSuccess: () => {
+      setForm({
+        leaveType: "Casual",
+        startDate: "",
+        endDate: "",
+        reason: ""
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ["my-leaves"]
+      });
+    }
+  });
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    mutation.mutate();
+  };
 
   return (
     <div>
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div>
-          <p className="text-sm text-slate-500">Employee Portal</p>
-          <h1 className="mt-2 text-3xl font-bold">Leave Management</h1>
-        </div>
+      <div className="mb-7">
+        <p className="mb-3 text-xs font-extrabold tracking-[.13em] text-[#3155d9]">
+          LEAVE MANAGEMENT
+        </p>
 
-        <Button onClick={() => setShowForm((value) => !value)}>
-          {showForm ? "Close Form" : "Apply for Leave"}
-        </Button>
+        <h1 className="m-0 text-3xl font-extrabold">
+          Leave requests
+        </h1>
       </div>
 
-      {showForm && (
-        <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-bold">New Leave Request</h2>
+      <div className="grid gap-5 lg:grid-cols-2">
+        <form
+          className="grid gap-4 rounded-[14px] border border-[#e2e7f0] bg-white p-6 shadow-sm"
+          onSubmit={submit}
+        >
+          <h2>Apply for leave</h2>
 
-          <form className="mt-6 grid gap-5 md:grid-cols-2">
-            <select className="rounded-xl border border-slate-300 px-4 py-3">
-              <option>Casual Leave</option>
-              <option>Sick Leave</option>
-              <option>Earned Leave</option>
+          <label>
+            Leave Type
+            <select
+              className="mt-1 w-full rounded-lg border border-[#d7deea] px-3 py-3"
+              value={form.leaveType}
+              onChange={(event) =>
+                setForm({
+                  ...form,
+                  leaveType: event.target.value
+                })
+              }
+            >
+              <option value="Casual">Casual</option>
+              <option value="Sick">Sick</option>
+              <option value="Annual">Annual</option>
             </select>
+          </label>
 
+          <label>
+            From
             <input
+              className="mt-1 w-full rounded-lg border border-[#d7deea] px-3 py-3"
               type="date"
-              className="rounded-xl border border-slate-300 px-4 py-3"
+              required
+              value={form.startDate}
+              onChange={(event) =>
+                setForm({
+                  ...form,
+                  startDate: event.target.value
+                })
+              }
             />
+          </label>
 
+          <label>
+            To
             <input
+              className="mt-1 w-full rounded-lg border border-[#d7deea] px-3 py-3"
               type="date"
-              className="rounded-xl border border-slate-300 px-4 py-3"
+              required
+              value={form.endDate}
+              onChange={(event) =>
+                setForm({
+                  ...form,
+                  endDate: event.target.value
+                })
+              }
             />
+          </label>
 
-            <input
-              placeholder="Reason"
-              className="rounded-xl border border-slate-300 px-4 py-3"
+          <label>
+            Reason
+            <textarea
+              className="mt-1 w-full rounded-lg border border-[#d7deea] px-3 py-3"
+              required
+              value={form.reason}
+              onChange={(event) =>
+                setForm({
+                  ...form,
+                  reason: event.target.value
+                })
+              }
             />
+          </label>
 
-            <Button type="button">Submit Request</Button>
-          </form>
-        </div>
-      )}
+          <button
+            className="rounded-lg bg-[#3155d9] px-5 py-3 font-semibold text-white"
+            disabled={mutation.isPending}
+          >
+            Submit Request
+          </button>
 
-      <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[750px] text-left text-sm">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="px-6 py-4">Type</th>
-                <th className="px-6 py-4">From</th>
-                <th className="px-6 py-4">To</th>
-                <th className="px-6 py-4">Days</th>
-                <th className="px-6 py-4">Status</th>
-              </tr>
-            </thead>
+          {mutation.isSuccess && (
+            <p className="rounded-lg bg-[#e7f8ef] p-3 text-[#167044]">
+              Leave request submitted.
+            </p>
+          )}
 
-            <tbody className="divide-y divide-slate-100">
-              {mockLeaveRequests.map((leave) => (
-                <tr key={leave.id}>
-                  <td className="px-6 py-4 font-medium">{leave.type}</td>
-                  <td className="px-6 py-4">{leave.from}</td>
-                  <td className="px-6 py-4">{leave.to}</td>
-                  <td className="px-6 py-4">{leave.days}</td>
-                  <td className="px-6 py-4">
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">
-                      {leave.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+          {mutation.isError && (
+            <p className="rounded-lg bg-[#fff0f0] p-3 text-[#c62828]">
+              {mutation.error instanceof Error
+                ? mutation.error.message
+                : "Failed to submit leave request."}
+            </p>
+          )}
+        </form>
+
+        <section className="rounded-[14px] border border-[#e2e7f0] bg-white p-6 shadow-sm">
+          <h2>Recent Requests</h2>
+
+          {requests.map((item) => (
+  <div
+    className="flex items-center justify-between gap-3 border-b border-[#e2e7f0] py-3 last:border-0"
+    key={item._id || item.id}
+  >
+    <div>
+      <strong>
+        {item.leaveType || item.type || "Leave"}
+      </strong>
+
+      <p className="m-1 text-sm text-[#6d7890]">
+        {item.startDate
+          ? new Date(item.startDate).toLocaleDateString()
+          : "N/A"}
+        {" to "}
+        {item.endDate
+          ? new Date(item.endDate).toLocaleDateString()
+          : "N/A"}
+      </p>
+    </div>
+
+    <span className="rounded-full bg-[#fff4d8] px-3 py-1 text-xs font-bold text-[#9a6700]">
+      {item.status || "Pending"}
+    </span>
+  </div>
+))}
+
+          {!requests.length && (
+            <p className="text-[#6d7890]">
+              No leave requests yet.
+            </p>
+          )}
+        </section>
       </div>
     </div>
   );

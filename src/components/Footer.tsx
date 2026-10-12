@@ -6,7 +6,7 @@ export default function Footer() {
       <div className="mx-auto grid max-w-7xl gap-10 px-6 py-14 md:grid-cols-4">
         <div>
           <h2 className="text-xl font-bold text-white">
-            Nova<span className="text-slate-400">Tech</span>
+            Pinnacle<span className="text-slate-400">Smart Technologies</span>
           </h2>
 
           <p className="mt-4 text-sm leading-6 text-slate-400">
@@ -49,7 +49,7 @@ export default function Footer() {
 
           <div className="mt-4 space-y-2 text-sm text-slate-400">
             <p>Kochi, Kerala, India</p>
-            <p>hello@novatech.com</p>
+            <p>hello@pinnaclesmarttechnologies.com</p>
             <p>+91 98765 43210</p>
           </div>
         </div>
@@ -57,7 +57,7 @@ export default function Footer() {
 
       <div className="border-t border-slate-800">
         <div className="mx-auto max-w-7xl px-6 py-5 text-center text-sm text-slate-500">
-          © 2026 NovaTech. All rights reserved.
+          © 2026 Pinnacle Smart Technologies. All rights reserved.
         </div>
       </div>
     </footer>
