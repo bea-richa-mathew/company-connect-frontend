@@ -1,81 +1,70 @@
 
-import { useQuery } from "@tanstack/react-query";
-import api from "../services/api";
-
-interface Announcement {
-  _id: string;
-  title: string;
-  message: string;
-  category?: string;
-  createdAt?: string;
-}
+import {
+  useAnnouncementsQuery,
+} from "../hooks/queryHooks";
 
 export default function Announcements() {
-  const { data, isLoading, isError } = useQuery<{
-    success: boolean;
-    data: Announcement[];
-  }>({
-    queryKey: ["public-announcements"],
-    queryFn: async () => {
-      const response = await api.get("/announcements");
-      return response.data;
-    },
-  });
-
-  const announcements = data?.data ?? [];
+  const {
+    data = [],
+    isLoading,
+    isError,
+    error,
+  } = useAnnouncementsQuery();
 
   return (
-    <section className="bg-white px-6 py-12 text-gray-900 dark:bg-gray-950 dark:text-white">
-      <div className="mx-auto max-w-6xl">
-        <p className="font-semibold uppercase tracking-widest text-indigo-500">
-          Company Updates
+    <div className="text-slate-900 transition-colors dark:text-slate-100">
+      <div className="mb-7">
+        <p className="mb-3 text-xs font-extrabold tracking-[.13em] text-indigo-700 dark:text-indigo-400">
+          ANNOUNCEMENTS
         </p>
 
-        <h2 className="mt-2 text-3xl font-bold">
-          Latest Announcements
-        </h2>
+        <h1 className="m-0 text-3xl font-extrabold text-slate-900 dark:text-white">
+          Company updates
+        </h1>
+      </div>
 
-        {isLoading && <p className="mt-5">Loading announcements...</p>}
+      {isLoading && (
+        <p className="text-slate-600 dark:text-slate-400">
+          Loading announcements...
+        </p>
+      )}
 
-        {isError && (
-          <p className="mt-5 text-red-500">
-            Unable to load announcements.
-          </p>
-        )}
+      {isError && (
+        <p className="text-red-600 dark:text-red-400">
+          {error instanceof Error
+            ? error.message
+            : "Unable to load announcements. Please try again."}
+        </p>
+      )}
 
-        {!isLoading && !isError && announcements.length === 0 && (
-          <p className="mt-5 text-gray-500">
-            No announcements available.
-          </p>
-        )}
-
-        <div className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {announcements.map((item) => (
+      {!isLoading && !isError && (
+        <div className="grid gap-5 md:grid-cols-2">
+          {data.map((announcement) => (
             <article
-              key={item._id}
-              className="rounded-xl border border-gray-200 bg-gray-50 p-6 dark:border-gray-800 dark:bg-gray-900"
+              className="rounded-[14px] border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900"
+              key={announcement._id || announcement.id}
             >
-              {item.category && (
-                <p className="text-sm text-indigo-500">
-                  {item.category}
-                </p>
-              )}
-
-              <h3 className="mt-2 text-xl font-bold">{item.title}</h3>
-
-              <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-gray-600 dark:text-gray-300">
-                {item.message}
+              <p className="text-xs font-extrabold tracking-[.13em] text-indigo-700 dark:text-indigo-400">
+                COMPANY UPDATE
               </p>
 
-              {item.createdAt && (
-                <p className="mt-4 text-xs text-gray-500">
-                  {new Date(item.createdAt).toLocaleDateString()}
-                </p>
-              )}
+              <h2 className="mt-3 text-xl font-bold text-slate-900 dark:text-white">
+                {announcement.title}
+              </h2>
+
+              <p className="mt-3 whitespace-pre-wrap leading-7 text-slate-600 dark:text-slate-300">
+                {announcement.message}
+              </p>
             </article>
           ))}
+
+          {!data.length && (
+            <p className="text-slate-600 dark:text-slate-400">
+              No announcements available.
+            </p>
+          )}
         </div>
-      </div>
-    </section>
+      )}
+    </div>
   );
 }

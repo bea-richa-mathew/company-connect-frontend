@@ -13,13 +13,16 @@ export default function Button({
 }: ButtonProps) {
   const variants = {
     primary:
-      "bg-slate-900 text-white hover:bg-slate-800",
+      "bg-slate-900 text-white hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-500",
+
     secondary:
-      "bg-slate-100 text-slate-900 hover:bg-slate-200",
+      "bg-slate-100 text-slate-900 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700",
+
     outline:
-      "border border-slate-300 bg-white text-slate-900 hover:bg-slate-50",
+      "border border-slate-300 bg-white text-slate-900 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800",
+
     danger:
-      "bg-red-600 text-white hover:bg-red-700",
+      "bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-500",
   };
 
   return (

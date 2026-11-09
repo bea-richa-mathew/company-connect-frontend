@@ -1,39 +1,46 @@
+import type { ReactNode } from "react";
 import {
   Navigate,
   Outlet,
-  useLocation
+  useLocation,
 } from "react-router-dom";
 
-import { useAuth } from "../context/AuthContext";
+import { useAuth, type Role } from "../context/AuthContext";
 
-export default function ProtectedRoute() {
-  const {
-    user,
-    loading
-  } = useAuth();
+interface ProtectedRouteProps {
+  allowedRoles?: Role[];
+  children?: ReactNode;
+}
 
-  const location =
-    useLocation();
+export default function ProtectedRoute({
+  allowedRoles = ["employee"],
+  children,
+}: ProtectedRouteProps) {
+  const { isAuthenticated, userRole, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
-      <div className="grid min-h-screen place-items-center text-[#6d7890]">
-        Loading...
+      <div className="flex min-h-screen items-center justify-center bg-[#08090d] text-gray-300">
+        Checking your account...
       </div>
     );
   }
 
-  if (!user) {
+  if (!isAuthenticated) {
     return (
       <Navigate
         to="/login"
-        state={{
-          from: location.pathname
-        }}
+        state={{ from: location.pathname }}
         replace
       />
     );
   }
 
-  return <Outlet />;
+  // A user without a valid employee role cannot access employee pages.
+  if (!userRole || !allowedRoles.includes(userRole)) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children ? <>{children}</> : <Outlet />;
 }

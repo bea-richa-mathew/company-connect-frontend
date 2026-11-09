@@ -1,149 +1,221 @@
-import {
-  useState,
-  type FormEvent
-} from "react";
 
-import {
-  Link,
-  useLocation,
-  useNavigate
-} from "react-router-dom";
+import { useState, type FormEvent } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
+import { toast } from "react-toastify";
 
 import { useAuth } from "../../context/AuthContext";
 
 export default function Login() {
-  const {
-    login
-  } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { login, isAuthenticated, userRole } = useAuth();
 
-  const navigate =
-    useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const location =
-    useLocation();
+  // Redirect already authenticated users to the correct area.
+  if (isAuthenticated && userRole) {
+    const from = location.state?.from;
 
-  const [
-    email,
-    setEmail
-  ] = useState("");
+    const destination =
+      typeof from === "string"
+        ? from
+        : from && typeof from.pathname === "string"
+          ? from.pathname
+          : "";
 
-  const [
-    password,
-    setPassword
-  ] = useState("");
+    if (
+      userRole === "employee" &&
+      destination.startsWith("/employee")
+    ) {
+      return <RedirectToPage destination={destination} />;
+    }
 
-  const [
-    error,
-    setError
-  ] = useState("");
+    if (userRole === "employee") {
+      return <RedirectToPage destination="/employee" />;
+    }
 
-  const submit = async (
-    event: FormEvent
-  ) => {
+    return <RedirectToPage destination="/" />;
+  }
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
     setError("");
 
+    if (!email.trim() || !password) {
+      const message = "Please enter your email and password.";
+      setError(message);
+      toast.warning(message);
+      return;
+    }
+
     try {
-      await login(
-        email,
-        password
-      );
+      setSubmitting(true);
 
-      const state =
-        location.state as
-          | { from?: string }
-          | null;
+      const role = await login(email.trim(), password);
 
-      navigate(
-        state?.from ||
-          "/employee",
-        {
-          replace: true
-        }
-      );
+      toast.success("Login successful!");
+
+      if (role === "employee") {
+        const from = location.state?.from;
+
+        const destination =
+          typeof from === "string" && from.startsWith("/employee")
+            ? from
+            : from &&
+                typeof from.pathname === "string" &&
+                from.pathname.startsWith("/employee")
+              ? from.pathname
+              : "/employee";
+
+        navigate(destination, { replace: true });
+      } else {
+        navigate("/", { replace: true });
+      }
     } catch (err: unknown) {
-      setError(
+      const message =
         err instanceof Error
           ? err.message
-          : "Login failed."
-      );
+          : "Unable to log in. Please try again.";
+
+      setError(message);
+      toast.error(message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <section className="grid min-h-[70vh] place-items-center px-5 py-12">
-      <form
-        className="grid w-full max-w-md gap-4 rounded-2xl border border-[#e2e7f0] bg-white p-7 shadow-sm"
-        onSubmit={submit}
-      >
-        <p className="mb-0 text-xs font-extrabold tracking-[.13em] text-[#3155d9]">
-          WELCOME BACK
-        </p>
+    <main className="auth-section flex min-h-screen items-center justify-center bg-[#08090d] px-4 py-12 text-white">
+      <section className="form-card w-full max-w-md rounded-2xl border border-[#252936] bg-[#101218] p-6 shadow-2xl sm:p-8">
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-500/15 text-indigo-400">
+            <LockKeyhole size={28} />
+          </div>
 
-        <h1 className="m-0 text-3xl font-extrabold">
-          Sign in
-        </h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Welcome Back
+          </h1>
 
-        <p className="text-[#6d7890]">
-          Sign in to your employee portal
-          account.
-        </p>
-
-        <label>
-          Email
-
-          <input
-            className="mt-1 w-full rounded-lg border border-[#d7deea] px-3 py-3"
-            type="email"
-            required
-            value={email}
-            onChange={(event) =>
-              setEmail(event.target.value)
-            }
-          />
-        </label>
-
-        <label>
-          Password
-
-          <input
-            className="mt-1 w-full rounded-lg border border-[#d7deea] px-3 py-3"
-            type="password"
-            required
-            value={password}
-            onChange={(event) =>
-              setPassword(
-                event.target.value
-              )
-            }
-          />
-        </label>
-
-        {error && (
-          <p className="rounded-lg bg-[#fff0f0] p-3 text-[#c62828]">
-            {error}
+          <p className="mt-2 text-sm text-gray-400">
+            Sign in to your Pinnacle account.
           </p>
-        )}
+        </div>
 
-        <button className="rounded-lg bg-[#3155d9] px-5 py-3 font-semibold text-white">
-          Login
-        </button>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label
+              htmlFor="email"
+              className="mb-2 block text-sm font-medium text-gray-200"
+            >
+              Email Address
+            </label>
 
-        <p className="rounded-lg bg-[#f3f5fa] p-3 text-sm text-[#6d7890]">
-          Admin accounts use the separate
-          Admin Portal.
-        </p>
+            <div className="flex items-center rounded-xl border border-[#303442] bg-[#08090d] px-3 focus-within:border-indigo-500">
+              <Mail size={18} className="shrink-0 text-gray-500" />
 
-        <p>
-          New user?{" "}
-          <Link
-            className="text-[#3155d9]"
-            to="/register"
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="Enter your email"
+                required
+                className="w-full bg-transparent px-3 py-3 text-sm text-white outline-none placeholder:text-gray-600"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label
+              htmlFor="password"
+              className="mb-2 block text-sm font-medium text-gray-200"
+            >
+              Password
+            </label>
+
+            <div className="flex items-center rounded-xl border border-[#303442] bg-[#08090d] px-3 focus-within:border-indigo-500">
+              <LockKeyhole
+                size={18}
+                className="shrink-0 text-gray-500"
+              />
+
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Enter your password"
+                required
+                className="w-full bg-transparent px-3 py-3 text-sm text-white outline-none placeholder:text-gray-600"
+              />
+
+              <button
+                type="button"
+                onClick={() =>
+                  setShowPassword((previous) => !previous)
+                }
+                aria-label={
+                  showPassword ? "Hide password" : "Show password"
+                }
+                className="shrink-0 text-gray-400 transition hover:text-white"
+              >
+                {showPassword ? (
+                  <EyeOff size={18} />
+                ) : (
+                  <Eye size={18} />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {error && (
+            <div
+              role="alert"
+              className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+            >
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full rounded-xl bg-indigo-600 px-4 py-3 font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Create an account
+            {submitting ? "Signing in..." : "Sign In"}
+          </button>
+        </form>
+
+        <p className="mt-6 text-center text-sm text-gray-400">
+          Don't have an account?{" "}
+          <Link
+            to="/register"
+            className="font-semibold text-indigo-400 hover:text-indigo-300"
+          >
+            Register
           </Link>
         </p>
-      </form>
-    </section>
+      </section>
+    </main>
   );
+}
+
+function RedirectToPage({ destination }: { destination: string }) {
+  const navigate = useNavigate();
+
+  useState(() => {
+    navigate(destination, { replace: true });
+  });
+
+  return null;
 }

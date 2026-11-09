@@ -1,3 +1,4 @@
+
 export type Role = "employee";
 
 export interface User {
@@ -88,6 +89,22 @@ export interface Task {
     | "Pending"
     | "In Progress"
     | "Completed";
+
+  // Added: assigning admin, populated by backend.
+  assignedBy?:
+    | string
+    | {
+        _id?: string;
+        name: string;
+        email: string;
+      };
+
+  reviewStatus?:
+    | "Not Submitted"
+    | "Pending Review"
+    | "Approved"
+    | "Changes Requested";
+  reviewComment?: string;
 }
 
 export interface Announcement {

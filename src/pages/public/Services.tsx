@@ -39,7 +39,7 @@ const services = [
 
 export default function Services() {
   return (
-    <div>
+    <div className="bg-white text-slate-900 transition-colors dark:bg-slate-950 dark:text-slate-100">
       <section className="bg-slate-950 px-6 py-20 text-white">
         <div className="mx-auto max-w-7xl">
           <p className="text-sm font-bold uppercase tracking-widest text-slate-400">
@@ -57,17 +57,24 @@ export default function Services() {
           {services.map((service) => (
             <article
               key={service.title}
-              className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm"
+              className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm transition-colors hover:border-indigo-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-indigo-500"
             >
-              <h2 className="text-xl font-bold">{service.title}</h2>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                {service.title}
+              </h2>
 
-              <p className="mt-4 leading-7 text-slate-600">
+              <p className="mt-4 leading-7 text-slate-600 dark:text-slate-300">
                 {service.description}
               </p>
 
-              <ul className="mt-6 space-y-3 text-sm text-slate-600">
+              <ul className="mt-6 space-y-3 text-sm text-slate-600 dark:text-slate-300">
                 {service.points.map((point) => (
-                  <li key={point}>✓ {point}</li>
+                  <li key={point}>
+                    <span className="mr-2 font-bold text-indigo-600 dark:text-indigo-400">
+                      ✓
+                    </span>
+                    {point}
+                  </li>
                 ))}
               </ul>
             </article>

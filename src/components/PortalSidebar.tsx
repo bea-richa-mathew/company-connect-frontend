@@ -1,72 +1,152 @@
-import {
-  NavLink
-} from "react-router-dom";
 
-export default function PortalSidebar() {
-  const link = ({
-    isActive
-  }: {
-    isActive: boolean;
-  }) =>
-    `rounded-lg px-3 py-3 ${
-      isActive
-        ? "bg-[#3155d9] text-white"
-        : "text-[#b8c0d1] hover:bg-[#3155d9] hover:text-white"
-    }`;
+import { useState } from "react";
+import { NavLink } from "react-router-dom";
+
+import {
+  LayoutDashboard,
+  UserRound,
+  CalendarCheck,
+  CalendarDays,
+  ListTodo,
+  FolderKanban,
+  Megaphone,
+  MessageCircle,
+  Settings,
+  Sun,
+  Moon,
+} from "lucide-react";
+
+import { useInternalUnreadCount } from "../hooks/useInternalUnreadCount";
+
+interface PortalSidebarProps {
+  onItemClick?: () => void;
+}
+
+const links = [
+  {
+    to: "/employee",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+  },
+  {
+    to: "/employee/profile",
+    label: "Profile",
+    icon: UserRound,
+  },
+  {
+    to: "/employee/attendance",
+    label: "Attendance",
+    icon: CalendarCheck,
+  },
+  {
+    to: "/employee/leave",
+    label: "Leave",
+    icon: CalendarDays,
+  },
+  {
+    to: "/employee/tasks",
+    label: "Tasks",
+    icon: ListTodo,
+  },
+  {
+    to: "/employee/projects",
+    label: "Projects",
+    icon: FolderKanban,
+  },
+  {
+    to: "/employee/announcements",
+    label: "Announcements",
+    icon: Megaphone,
+  },
+  {
+    to: "/employee/messages",
+    label: "Messages",
+    icon: MessageCircle,
+  },
+  {
+    to: "/employee/settings",
+    label: "Settings",
+    icon: Settings,
+  },
+];
+
+export default function PortalSidebar({
+  onItemClick,
+}: PortalSidebarProps) {
+  const { data: unreadCount = 0 } =
+    useInternalUnreadCount();
+
+  const [isDark, setIsDark] = useState(() => {
+    return localStorage.getItem("theme") !== "light";
+  });
+
+  const toggleTheme = () => {
+    const newTheme = isDark ? "light" : "dark";
+
+    setIsDark(!isDark);
+
+    localStorage.setItem("theme", newTheme);
+
+    document.documentElement.classList.toggle(
+      "dark",
+      newTheme === "dark"
+    );
+
+    document.documentElement.dataset.theme = newTheme;
+  };
 
   return (
-    <aside className="w-full shrink-0 bg-[#172033] p-4 text-white md:w-60 md:p-6">
-      <div className="px-3 pb-5 text-xl font-extrabold">
-        Employee Panel
-      </div>
-
-      <nav className="flex gap-1 overflow-x-auto md:grid">
+    <nav
+      className="flex flex-col gap-1"
+      aria-label="Employee navigation"
+    >
+      {links.map(({ to, label, icon: Icon }) => (
         <NavLink
-          to="/employee"
-          end
-          className={link}
+          key={to}
+          to={to}
+          end={to === "/employee"}
+          onClick={onItemClick}
+          className={({ isActive }) =>
+            `flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition ${
+              isActive
+                ? "bg-indigo-600 text-white"
+                : "text-gray-300 hover:bg-white/10 hover:text-white"
+            }`
+          }
         >
-          Dashboard
-        </NavLink>
+          <Icon size={19} className="shrink-0" />
 
-        <NavLink
-          to="/employee/profile"
-          className={link}
-        >
-          My Profile
-        </NavLink>
+          <span className="flex-1">
+            {label}
+          </span>
 
-        <NavLink
-          to="/employee/attendance"
-          className={link}
-        >
-          Attendance
+          {to === "/employee/messages" &&
+            unreadCount > 0 && (
+              <span className="rounded-full bg-red-600 px-2 py-0.5 text-xs font-bold text-white">
+                {unreadCount > 99
+                  ? "99+"
+                  : unreadCount}
+              </span>
+            )}
         </NavLink>
+      ))}
 
-        <NavLink
-          to="/employee/leave"
-          className={link}
-        >
-          Leave Management
-        </NavLink>
+      {/* Single Light / Dark Mode Toggle */}
+      <button
+        type="button"
+        onClick={toggleTheme}
+        className="mt-3 flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-gray-300 transition hover:bg-white/10 hover:text-white"
+      >
+        {isDark ? (
+          <Sun size={19} className="shrink-0" />
+        ) : (
+          <Moon size={19} className="shrink-0" />
+        )}
 
-        <NavLink
-          to="/employee/tasks"
-          className={link}
-        >
-          My Tasks
-        </NavLink>
-
-        <NavLink
-          to="/employee/announcements"
-          className={link}
-        >
-          Announcements
-        </NavLink>
-        <NavLink to="/settings">
-          Settings
-        </NavLink>
-      </nav>
-    </aside>
+        <span>
+          {isDark ? "Light Mode" : "Dark Mode"}
+        </span>
+      </button>
+    </nav>
   );
 }

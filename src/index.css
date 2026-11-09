@@ -1,4 +1,5 @@
 @import "tailwindcss";
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
@@ -13,11 +14,14 @@
   body {
     margin: 0;
     min-width: 320px;
-    background: #f6f8fc;
-    color: #172033;
     font-family: Inter, Arial, sans-serif;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+    @apply bg-[#f6f8fc] text-[#172033] transition-colors duration-200;
+  }
+
+  .dark body {
+    @apply bg-[#08090d] text-gray-100;
   }
 
   a {
@@ -34,5 +38,52 @@
 
   button {
     cursor: pointer;
+  }
+
+  input,
+  textarea,
+  select {
+    color: #172033;
+    background-color: #ffffff;
+    border-color: #d7deea;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #8490a3;
+  }
+
+  .dark input,
+  .dark textarea,
+  .dark select {
+    color: #f3f4f6;
+    background-color: #181a22;
+    border-color: #3a3d4a;
+    color-scheme: dark;
+  }
+
+  .dark input::placeholder,
+  .dark textarea::placeholder {
+    color: #9ca3af;
+  }
+
+  .dark input:disabled,
+  .dark textarea:disabled,
+  .dark select:disabled {
+    color: #a1a1aa;
+    background-color: #242630;
+    opacity: 1;
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    outline: 2px solid #6366f1;
+    outline-offset: 1px;
+  }
+
+  ::selection {
+    background: #6366f1;
+    color: #ffffff;
   }
 }

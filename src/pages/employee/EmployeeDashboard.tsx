@@ -6,7 +6,6 @@ import {
   useQuery
 } from "@tanstack/react-query";
 
-import { useAuth } from "../../context/AuthContext";
 import api from "../../services/api";
 
 import type {
@@ -18,10 +17,6 @@ import type {
 import StatCard from "../../components/StatCard";
 
 export default function EmployeeDashboard() {
-  const {
-    user
-  } = useAuth();
-
   const {
     data: tasks = []
   } = useQuery<Task[]>({
@@ -69,7 +64,7 @@ export default function EmployeeDashboard() {
         </p>
 
         <h1 className="m-0 text-3xl font-extrabold">
-          Welcome, {user?.name}
+          Welcome back, Employee
         </h1>
 
         <p className="text-[#6d7890]">
@@ -110,9 +105,9 @@ export default function EmployeeDashboard() {
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[1.3fr_1fr]">
-        <section className="rounded-[14px] border border-[#e2e7f0] bg-white p-6 shadow-sm">
+        <section className="rounded-[14px] border border-[#e2e7f0] bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <div className="flex items-center justify-between">
-            <h2>
+            <h2 className="text-xl font-bold">
               Recent Tasks
             </h2>
 
@@ -128,7 +123,7 @@ export default function EmployeeDashboard() {
             .slice(0, 5)
             .map((task) => (
               <div
-                className="flex items-center justify-between gap-3 border-b border-[#e2e7f0] py-3 last:border-0"
+                className="flex items-center justify-between gap-3 border-b border-[#e2e7f0] py-3 last:border-0 dark:border-zinc-800"
                 key={
                   task._id ||
                   task.id
@@ -145,46 +140,45 @@ export default function EmployeeDashboard() {
                   </p>
                 </div>
 
-                <span className="rounded-full bg-[#eef2ff] px-3 py-1 text-xs font-semibold text-[#3155d9]">
+                <span className="rounded-full bg-[#eef2ff] px-3 py-1 text-xs font-semibold text-[#3155d9] dark:bg-zinc-800 dark:text-cyan-400">
                   {task.status}
                 </span>
               </div>
             ))}
 
           {!tasks.length && (
-            <p className="text-[#6d7890]">
+            <p className="text-[#6d7890] mt-3">
               No tasks assigned.
             </p>
           )}
         </section>
 
-        <section className="rounded-[14px] border border-[#e2e7f0] bg-white p-6 shadow-sm">
-          <h2>
+        <section className="rounded-[14px] border border-[#e2e7f0] bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <h2 className="text-xl font-bold mb-4">
             Quick Actions
           </h2>
 
           <div className="flex flex-wrap gap-3">
             <Link
-              className="rounded-lg border border-[#3155d9] bg-white px-4 py-2 text-sm font-semibold text-[#3155d9]"
+              className="rounded-lg border border-[#3155d9] bg-white px-4 py-2 text-sm font-semibold text-[#3155d9] hover:bg-gray-50 dark:border-cyan-400 dark:bg-zinc-800 dark:text-cyan-400"
               to="/employee/profile"
             >
               Update Profile
             </Link>
 
             <Link
-              className="rounded-lg border border-[#3155d9] bg-white px-4 py-2 text-sm font-semibold text-[#3155d9]"
+              className="rounded-lg border border-[#3155d9] bg-white px-4 py-2 text-sm font-semibold text-[#3155d9] hover:bg-gray-50 dark:border-cyan-400 dark:bg-zinc-800 dark:text-cyan-400"
               to="/employee/leave"
             >
               Apply Leave
             </Link>
 
             <Link
-              className="rounded-lg border border-[#3155d9] bg-white px-4 py-2 text-sm font-semibold text-[#3155d9]"
+              className="rounded-lg border border-[#3155d9] bg-white px-4 py-2 text-sm font-semibold text-[#3155d9] hover:bg-gray-50 dark:border-cyan-400 dark:bg-zinc-800 dark:text-cyan-400"
               to="/employee/attendance"
             >
               View Attendance
             </Link>
-            
           </div>
         </section>
       </div>

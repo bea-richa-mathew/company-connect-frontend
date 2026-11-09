@@ -1,121 +1,73 @@
+
 /* eslint-disable react-refresh/only-export-components */
 
 import {
   createContext,
   useContext,
-  useEffect,
   useState,
   type ReactNode,
 } from "react";
 
 import api from "../services/api";
-import type { User } from "../types";
+
+export type Role = "user" | "employee";
+
+interface EmployeeDetails {
+  department: string;
+  designation: string;
+  phone: string;
+}
 
 interface AuthContextValue {
-  user: User | null;
+  isAuthenticated: boolean;
   loading: boolean;
-
-  login: (
-    email: string,
-    password: string
-  ) => Promise<void>;
-
+  isLoading: boolean;
+  userRole: Role | null;
+  login: (email: string, password: string) => Promise<Role>;
   register: (
     name: string,
     email: string,
     password: string,
-    role: "user" | "employee"
+    role: Role,
+    employeeDetails?: EmployeeDetails
   ) => Promise<void>;
-
   logout: () => void;
 }
 
-const AuthContext =
-  createContext<AuthContextValue | undefined>(
-    undefined
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
+    () => localStorage.getItem("employeeToken") !== null
   );
 
-export function AuthProvider({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  const [user, setUser] =
-    useState<User | null>(null);
+  const [userRole, setUserRole] = useState<Role | null>(() => {
+    const savedRole = localStorage.getItem("employeeRole");
 
-  const [loading, setLoading] =
-    useState(() => localStorage.getItem(
-        "employeeToken"
-      ) !== null
-    );
+    return savedRole === "employee" || savedRole === "user"
+      ? savedRole
+      : null;
+  });
 
-  useEffect(() => {
-    const token =
-      localStorage.getItem("employeeToken");
+  const [loading] = useState<boolean>(false);
 
-    if (!token) {
-      setTimeout(() => setLoading(false), 0);
-      return;
-    }
-
-    const checkUser = async () => {
-      try {
-        const response =
-          await api.get("/auth/me");
-
-        const currentUser =
-          (response.data.data ?? response.data.user ?? response.data) as User;
-
-        if (
-          currentUser.role !== "employee" &&
-          currentUser.role !== "user"
-        ) {
-          throw new Error(
-            "Admin accounts must use the separate admin portal."
-          );
-        }
-
-        setUser(currentUser);
-
-        localStorage.setItem(
-          "company_portal_user",
-          JSON.stringify(currentUser)
-        );
-      } catch {
-        localStorage.removeItem(
-          "employeeToken"
-        );
-
-        localStorage.removeItem(
-          "company_portal_user"
-        );
-
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkUser();
-  }, []);
-
+  // Log in an existing user or employee.
   const login = async (
     email: string,
     password: string
-  ): Promise<void> => {
-    const response =
-      await api.post("/auth/login", {
-        email,
-        password,
-      });
+  ): Promise<Role> => {
+    const response = await api.post("/auth/login", {
+      email,
+      password,
+    });
 
-    const {
-      token,
-      user: loggedUser,
-    } = (response.data.data ?? response.data) as {
-      token: string;
-      user: User;
+    const result = response.data.data ?? response.data;
+
+    const loggedUser = result.user as {
+      role: string;
     };
+
+    const token = result.token as string | undefined;
 
     if (
       loggedUser.role !== "employee" &&
@@ -126,80 +78,108 @@ export function AuthProvider({
       );
     }
 
-    localStorage.setItem(
-      "employeeToken",
-      token
-    );
+    if (!token) {
+      throw new Error("Login failed: authentication token is missing.");
+    }
 
-    localStorage.setItem(
-      "company_portal_user",
-      JSON.stringify(loggedUser)
-    );
+    const role: Role = loggedUser.role;
 
-    setUser(loggedUser);
+    localStorage.setItem("employeeToken", token);
+    localStorage.setItem("employeeRole", role);
+
+    setUserRole(role);
+    setIsAuthenticated(true);
+
+    return role;
   };
 
+  // Register a new user or employee.
   const register = async (
     name: string,
     email: string,
     password: string,
-    role: "user" | "employee"
+    role: Role,
+    employeeDetails?: EmployeeDetails
   ): Promise<void> => {
-    const response =
-      await api.post("/auth/register", {
-        name,
-        email,
-        password,
-        role,
-      });
+    if (
+      role === "employee" &&
+      (!employeeDetails?.department.trim() ||
+        !employeeDetails?.designation.trim() ||
+        !employeeDetails?.phone.trim())
+    ) {
+      throw new Error(
+        "Department, designation, and phone number are required for employees."
+      );
+    }
 
-    const {
-      token,
-      user: registeredUser,
-    } = (response.data.data ?? response.data) as {
-      token: string;
-      user: User;
+    const requestBody = {
+      name,
+      email,
+      password,
+      role,
+      ...(role === "employee"
+        ? {
+            department: employeeDetails!.department.trim(),
+            designation: employeeDetails!.designation.trim(),
+            phone: employeeDetails!.phone.trim(),
+          }
+        : {}),
     };
+
+    const response = await api.post("/auth/register", requestBody);
+
+    const result = response.data.data ?? response.data;
+
+    const registeredUser = result.user as {
+      role: string;
+    };
+
+    const token = result.token as string | undefined;
 
     if (
       registeredUser.role !== "employee" &&
       registeredUser.role !== "user"
     ) {
+      throw new Error("Invalid account role.");
+    }
+
+    if (registeredUser.role !== role) {
       throw new Error(
-        "Invalid account role."
+        "The registered account role does not match the selected role."
       );
     }
 
-    localStorage.setItem(
-      "employeeToken",
-      token
-    );
+    if (!token) {
+      throw new Error(
+        "Registration succeeded, but the authentication token is missing."
+      );
+    }
 
-    localStorage.setItem(
-      "company_portal_user",
-      JSON.stringify(registeredUser)
-    );
+    const registeredRole: Role = registeredUser.role;
 
-    setUser(registeredUser);
+    localStorage.setItem("employeeToken", token);
+    localStorage.setItem("employeeRole", registeredRole);
+
+    setUserRole(registeredRole);
+    setIsAuthenticated(true);
   };
 
+  // Log out and clear the saved authentication details.
   const logout = (): void => {
-    localStorage.removeItem(
-      "employeeToken"
-    );
+    localStorage.removeItem("employeeToken");
+    localStorage.removeItem("employeeRole");
 
-    localStorage.removeItem(
-      "company_portal_user"
-    );
-
-    setUser(null);
+    setUserRole(null);
+    setIsAuthenticated(false);
   };
 
   return (
     <AuthContext.Provider
       value={{
-        user,
+        isAuthenticated,
         loading,
+        isLoading: loading,
+        userRole,
         login,
         register,
         logout,
@@ -211,13 +191,10 @@ export function AuthProvider({
 }
 
 export function useAuth(): AuthContextValue {
-  const context =
-    useContext(AuthContext);
+  const context = useContext(AuthContext);
 
   if (context === undefined) {
-    throw new Error(
-      "useAuth must be used inside AuthProvider"
-    );
+    throw new Error("useAuth must be used inside AuthProvider");
   }
 
   return context;
