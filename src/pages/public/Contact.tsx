@@ -19,7 +19,7 @@ export default function Contact() {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/contact",
+        `${import.meta.env.VITE_API_URL || "https://company-connect-backend-production.up.railway.app/api"}/contact`,
         {
           method: "POST",
           headers: {
