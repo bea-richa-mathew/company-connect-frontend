@@ -373,7 +373,7 @@ export default function TeamChat({
     const socket = io(SOCKET_URL, {
       auth: token ? { token } : {},
       withCredentials: true,
-      transports: ["websocket", "polling"],
+      transports: ["polling","websocket"],
       reconnection: true,
       reconnectionAttempts: Infinity,
     });
